@@ -132,7 +132,64 @@ else:
                 )
                 # -------------------------------------------
                 
+                # -------------------------------------------
+                
                 st.divider()
+
+                # --- PIVOT TABLO / ÖZET OLUŞTURUCU (Yeni Özellik) ---
+                st.subheader("🔢 Özet Tablo (Pivot) Oluşturucu")
+                
+                pivot_col1, pivot_col2, pivot_col3 = st.columns(3)
+                
+                with pivot_col1:
+                    groupby_cols = st.multiselect("Gruplanacak Sütunlar (Satırlar)", df_filtered.columns)
+                
+                with pivot_col2:
+                    numeric_cols_pivot = df_filtered.select_dtypes(include=['float64', 'int64']).columns
+                    value_col = st.selectbox("Hesaplanacak Değer (Sayısal)", numeric_cols_pivot if len(numeric_cols_pivot) > 0 else df_filtered.columns)
+                
+                with pivot_col3:
+                    agg_func = st.selectbox("İşlem Türü", ["Toplam (Sum)", "Ortalama (Mean)", "Sayma (Count)", "Min", "Max"])
+                
+                if groupby_cols and value_col:
+                    try:
+                        # İşlem türüne göre map
+                        agg_map = {
+                            "Toplam (Sum)": "sum",
+                            "Ortalama (Mean)": "mean",
+                            "Sayma (Count)": "count",
+                            "Min": "min",
+                            "Max": "max"
+                        }
+                        
+                        # Pivot Oluşturma
+                        df_pivot = df_filtered.groupby(groupby_cols)[value_col].agg(agg_map[agg_func]).reset_index()
+                        
+                        # Formatlama (Sayısal görünüm için) - Opsiyonel ama şık durur
+                        if agg_func in ["Toplam (Sum)", "Ortalama (Mean)", "Min", "Max"] and pd.api.types.is_numeric_dtype(df_pivot[value_col]):
+                             # pivot tablosunu gösterirken number formatı uygulanabilir ama st.dataframe zaten iyi gösteriyor.
+                             pass
+
+                        st.markdown(f"**Sonuç:** {', '.join(groupby_cols)} bazında {value_col} ({agg_func})")
+                        st.dataframe(df_pivot, use_container_width=True)
+                        
+                        # Pivot İndirme Butonu
+                        excel_pivot = to_excel(df_pivot)
+                        st.download_button(
+                            label="📥 Özet Tabloyu İndir (Excel)",
+                            data=excel_pivot,
+                            file_name='ozet_pivot_tablo.xlsx',
+                            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            key='download-pivot'
+                        )
+                        
+                    except Exception as e:
+                        st.warning(f"Pivot tablo oluşturulurken hata: {e}")
+                else:
+                    st.info("Lütfen bir özet tablo oluşturmak için en az bir 'Gruplama Sütunu' seçin.")
+
+                st.divider()
+                # ----------------------------------------------------
                 
                 # Grafik Oluşturma
                 st.subheader("📈 Grafik Görselleştirme")
