@@ -114,16 +114,17 @@ else:
 
                 st.dataframe(df_filtered)
 
-                # --- EXCEL İNDİRME BUTONU (Yeni Özellik) ---
-                def to_excel(df):
+                # --- EXCEL İNDİRME BUTONU (Genel) ---
+                def to_excel(df, use_index=False):
                     output = io.BytesIO()
                     # xlsxwriter yerine openpyxl kullanıyoruz (zaten yüklü)
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df.to_excel(writer, index=False, sheet_name='Sheet1')
+                        df.to_excel(writer, index=use_index, sheet_name='Sheet1')
                     processed_data = output.getvalue()
                     return processed_data
 
-                excel_data = to_excel(df_filtered)
+                # Filtrelenmiş ham veri için index'e gerek yok
+                excel_data = to_excel(df_filtered, use_index=False)
                 st.sidebar.download_button(
                     label="📥 Filtrelenmiş Raporu İndir (Excel)",
                     data=excel_data,
