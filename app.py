@@ -136,41 +136,60 @@ else:
                 
                 st.divider()
 
-                # --- PIVOT TABLO / ÖZET OLUŞTURUCU (Yeni Özellik) ---
-                st.subheader("🔢 Özet Tablo (Pivot) Oluşturucu")
+                # --- PIVOT TABLO / ÖZET OLUŞTURUCU (Gelişmiş - 6 Kriter) ---
+                st.subheader("🔢 Gelişmiş Özet Tablo Oluşturucu")
                 
-                pivot_col1, pivot_col2, pivot_col3 = st.columns(3)
+                # İlk Satır Ayarları
+                st.markdown("##### 1. Yapılandırma")
+                row1_col1, row1_col2, row1_col3 = st.columns(3)
                 
-                with pivot_col1:
-                    groupby_cols = st.multiselect("Gruplanacak Sütunlar (Satırlar)", df_filtered.columns)
+                with row1_col1:
+                    pivot_index = st.multiselect("1. Satırlar (Grupla)", df_filtered.columns, key="pivot_index")
                 
-                with pivot_col2:
+                with row1_col2:
+                    pivot_columns = st.multiselect("2. Sütunlar (Pivot)", df_filtered.columns, key="pivot_columns")
+                
+                with row1_col3:
                     numeric_cols_pivot = df_filtered.select_dtypes(include=['float64', 'int64']).columns
-                    value_col = st.selectbox("Hesaplanacak Değer (Sayısal)", numeric_cols_pivot if len(numeric_cols_pivot) > 0 else df_filtered.columns)
-                
-                with pivot_col3:
-                    agg_func = st.selectbox("İşlem Türü", ["Toplam (Sum)", "Ortalama (Mean)", "Sayma (Count)", "Min", "Max"])
-                
-                if groupby_cols and value_col:
-                    try:
-                        # İşlem türüne göre map
-                        agg_map = {
-                            "Toplam (Sum)": "sum",
-                            "Ortalama (Mean)": "mean",
-                            "Sayma (Count)": "count",
-                            "Min": "min",
-                            "Max": "max"
-                        }
-                        
-                        # Pivot Oluşturma
-                        df_pivot = df_filtered.groupby(groupby_cols)[value_col].agg(agg_map[agg_func]).reset_index()
-                        
-                        # Formatlama (Sayısal görünüm için) - Opsiyonel ama şık durur
-                        if agg_func in ["Toplam (Sum)", "Ortalama (Mean)", "Min", "Max"] and pd.api.types.is_numeric_dtype(df_pivot[value_col]):
-                             # pivot tablosunu gösterirken number formatı uygulanabilir ama st.dataframe zaten iyi gösteriyor.
-                             pass
+                    pivot_values = st.multiselect("3. Değerler (Sayısal)", numeric_cols_pivot if len(numeric_cols_pivot) > 0 else df_filtered.columns, key="pivot_values")
 
-                        st.markdown(f"**Sonuç:** {', '.join(groupby_cols)} bazında {value_col} ({agg_func})")
+                # İkinci Satır Ayarları
+                st.markdown("##### 2. Hesaplama ve Stil")
+                row2_col1, row2_col2, row2_col3 = st.columns(3)
+
+                with row2_col1:
+                    pivot_agg = st.selectbox("4. İşlem Türü", ["Toplam (sum)", "Ortalama (mean)", "Sayma (count)", "Min", "Max"], key="pivot_agg")
+                
+                with row2_col2:
+                    pivot_margins = st.checkbox("5. Genel Toplamları Göster", value=True, key="pivot_margins")
+                
+                with row2_col3:
+                    pivot_fill = st.checkbox("6. Boşlukları 0 ile Doldur", value=True, key="pivot_fill")
+                
+                # İşlem Mapping
+                agg_map_raw = {
+                    "Toplam (sum)": "sum",
+                    "Ortalama (mean)": "mean",
+                    "Sayma (count)": "count",
+                    "Min": "min",
+                    "Max": "max"
+                }
+
+                if pivot_index and pivot_values:
+                    try:
+                        # Pivot Table Fonksiyonu
+                        df_pivot = pd.pivot_table(
+                            df_filtered,
+                            index=pivot_index,
+                            columns=pivot_columns if pivot_columns else None,
+                            values=pivot_values,
+                            aggfunc=agg_map_raw[pivot_agg],
+                            margins=pivot_margins,
+                            margins_name="Genel Toplam",
+                            fill_value=0 if pivot_fill else None
+                        )
+                        
+                        st.markdown(f"**Önizleme:**")
                         st.dataframe(df_pivot, use_container_width=True)
                         
                         # Pivot İndirme Butonu
@@ -178,15 +197,15 @@ else:
                         st.download_button(
                             label="📥 Özet Tabloyu İndir (Excel)",
                             data=excel_pivot,
-                            file_name='ozet_pivot_tablo.xlsx',
+                            file_name='gelismis_ozet_tablo.xlsx',
                             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            key='download-pivot'
+                            key='download-pivot-advanced'
                         )
                         
                     except Exception as e:
-                        st.warning(f"Pivot tablo oluşturulurken hata: {e}")
+                        st.warning(f"Tablo oluşturulamadı. Seçimlerinizi kontrol edin. (Hata: {e})")
                 else:
-                    st.info("Lütfen bir özet tablo oluşturmak için en az bir 'Gruplama Sütunu' seçin.")
+                    st.info("Lütfen en az bir **Satır** ve bir **Değer** seçin.")
 
                 st.divider()
                 # ----------------------------------------------------
