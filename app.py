@@ -194,7 +194,7 @@ else:
                         st.dataframe(df_pivot, use_container_width=True)
                         
                         # Pivot İndirme Butonu
-                        excel_pivot = to_excel(df_pivot)
+                        excel_pivot = to_excel(df_pivot, use_index=True)
                         st.download_button(
                             label="📥 Özet Tabloyu İndir (Excel)",
                             data=excel_pivot,
